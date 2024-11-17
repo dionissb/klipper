@@ -1,6 +1,7 @@
 import logging
 import time
 from abc import ABCMeta, abstractmethod
+from . import led
 
 SERIAL_STATE_HEADER_NONE = 0
 SERIAL_STATE_HEADER_ONE = 1
@@ -279,7 +280,8 @@ class NeptuneScreen:
         self.reactor.register_timer(
             self._reset_screen, self.reactor.monotonic())
 
-        pled = self.printer.lookup_object("led")
+        self.led_helper = pled.setup_helper(config, self.update_leds,
+                                            chain_count)
         self.leds =  [
             pled.led_helpers.get(n) for n in pled.led_helpers.keys()
         ]
