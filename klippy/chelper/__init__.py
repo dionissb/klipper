@@ -21,7 +21,7 @@ SOURCE_FILES = [
     'pollreactor.c', 'msgblock.c', 'trdispatch.c',
     'kin_cartesian.c', 'kin_corexy.c', 'kin_corexz.c', 'kin_delta.c',
     'kin_deltesian.c', 'kin_polar.c', 'kin_rotary_delta.c', 'kin_winch.c',
-    'kin_extruder.c', 'kin_shaper.c', 'kin_idex.c',
+    'kin_extruder.c', 'kin_shaper.c', 'kin_idex.c', 'kin_generic.c'
 ]
 DEST_LIB = "c_helper.so"
 OTHER_FILES = [
@@ -106,6 +106,12 @@ defs_trapq = """
 defs_kin_cartesian = """
     struct stepper_kinematics *cartesian_stepper_alloc(char axis);
 """
+defs_kin_generic_cartesian = """
+    struct stepper_kinematics *generic_cartesian_stepper_alloc(double a_x
+        , double a_y, double a_z);
+    void generic_cartesian_stepper_set_coeffs(struct stepper_kinematics *sk
+        , double a_x, double a_y, double a_z);
+"""
 
 defs_kin_corexy = """
     struct stepper_kinematics *corexy_stepper_alloc(char type);
@@ -154,6 +160,7 @@ defs_kin_shaper = """
         , int n, double a[], double t[]);
     int input_shaper_set_sk(struct stepper_kinematics *sk
         , struct stepper_kinematics *orig_sk);
+    void input_shaper_update_sk(struct stepper_kinematics *sk);
     struct stepper_kinematics * input_shaper_alloc(void);
 """
 
@@ -175,7 +182,7 @@ defs_serialqueue = """
     };
 
     struct serialqueue *serialqueue_alloc(int serial_fd, char serial_fd_type
-        , int client_id);
+        , int client_id, char name[16]);
     void serialqueue_exit(struct serialqueue *sq);
     void serialqueue_free(struct serialqueue *sq);
     struct command_queue *serialqueue_alloc_commandqueue(void);
@@ -212,6 +219,7 @@ defs_trdispatch = """
 defs_pyhelper = """
     void set_python_logging_callback(void (*func)(const char *));
     double get_monotonic(void);
+    int set_thread_name(char name[16]);
 """
 
 defs_std = """
@@ -224,6 +232,7 @@ defs_all = [
     defs_kin_cartesian, defs_kin_corexy, defs_kin_corexz, defs_kin_delta,
     defs_kin_deltesian, defs_kin_polar, defs_kin_rotary_delta, defs_kin_winch,
     defs_kin_extruder, defs_kin_shaper, defs_kin_idex,
+    defs_kin_generic_cartesian,
 ]
 
 # Update filenames to an absolute path
@@ -266,7 +275,7 @@ FFI_main = None
 FFI_lib = None
 pyhelper_logging_callback = None
 
-# Hepler invoked from C errorf() code to log errors
+# Helper invoked from C errorf() code to log errors
 def logging_callback(msg):
     logging.error(FFI_main.string(msg))
 

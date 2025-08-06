@@ -58,8 +58,9 @@ Registers = {
 ReadRegisters = [
     "GCONF", "GSTAT", "IOIN", "DRV_CONF", "GLOBALSCALER", "IHOLD_IRUN",
     "TPOWERDOWN", "TSTEP", "TPWMTHRS", "TCOOLTHRS", "THIGH", "ADC_VSUPPLY_AIN",
-    "ADC_TEMP", "MSCNT", "MSCURACT", "CHOPCONF", "COOLCONF", "DRV_STATUS",
-    "PWMCONF", "PWM_SCALE", "PWM_AUTO", "SG4_THRS", "SG4_RESULT", "SG4_IND"
+    "ADC_TEMP", "OTW_OV_VTH", "MSCNT", "MSCURACT", "CHOPCONF", "COOLCONF",
+    "DRV_STATUS", "PWMCONF", "PWM_SCALE", "PWM_AUTO", "SG4_THRS", "SG4_RESULT",
+    "SG4_IND"
 ]
 
 Fields = {}
@@ -408,6 +409,8 @@ class TMC2240:
         set_config_field(config, "tpowerdown", 10)
         #   SG4_THRS
         set_config_field(config, "sg4_angle_offset", 1)
+        #   DRV_CONF
+        set_config_field(config, "slope_control", 0)
 
 def load_config_prefix(config):
     return TMC2240(config)
