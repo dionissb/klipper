@@ -43,8 +43,6 @@ class NeptuneScreen:
         self.heaters = []
         self.leds = []
         self._last_gcode_output = ""
-
-
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_output_handler(self.gcode_output_handler)
@@ -102,15 +100,13 @@ class NeptuneScreen:
 
         return eventtime + self._update_interval
 
-    def _is_led_on(self, eventtime):
-        for led in self.leds:
-            status = led.get_status(eventtime)
-            white = status["color_data"][0][3]
 
+    def _is_led_on(self, eventtime):
+        for _, led_helper in self.leds:
+            white = led_helper.get_status(eventtime)["color_data"][0][3]
             if white > 0:
                 return True
-            else:
-                return False
+        return False
 
     def _handle_serial_bridge_response(self, data):
         byte_debug = ' '.join(['0x{:02x}'.format(byte) for byte in data])
@@ -280,11 +276,11 @@ class NeptuneScreen:
         self.reactor.register_timer(
             self._reset_screen, self.reactor.monotonic())
 
-        self.led_helper = pled.setup_helper(config, self.update_leds,
-                                            chain_count)
-        self.leds =  [
-            pled.led_helpers.get(n) for n in pled.led_helpers.keys()
-        ]
+        for obj_name in self.printer.objects:
+            if obj_name.startswith("led "):
+                led_obj = self.printer.lookup_object(obj_name)
+                if led_obj is not None:
+                    self.leds.append((obj_name.split()[-1], led_obj.led_helper))
 
         #for n in self.printer.lookup_objects():
         #    self.log(f"object: {n}" )
@@ -456,15 +452,10 @@ class BedLevelProcessor(CommandProcessor):
             screen.updateNumericVariable(
                 "adjustzoffset.zoffset_value.val", "3")
         if message.command_data[0] == 0x8: #light button
-            pled = screen.printer.lookup_object("led")
-            for n in pled.led_helpers.keys():
-                status = pled.led_helpers[n].get_status(None)
-                white = status["color_data"][0][3]
-
-                if white > 0:
-                    screen.run_delayed_gcode("SET_LED LED=%s WHITE=0" % (n))
-                else:
-                    screen.run_delayed_gcode("SET_LED LED=%s WHITE=1" % (n))
+            for led_name, led_helper in screen.leds:
+                white = led_helper.get_status(None)["color_data"][0][3]
+                new_white = 0 if white > 0 else 1
+                screen.run_delayed_gcode(f"SET_LED LED={led_name} WHITE={new_white}")  
         if message.command_data[0] == 0x9: #bed level calibrate
             screen.run_delayed_gcode(
                 "BED_MESH_CLEAR\n" \
